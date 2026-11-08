@@ -22,7 +22,9 @@
 
   /* ---------- condition builder ---------- */
   function condOptions(scn) {
-    const si = FL.lang.sensorInfo(scn);
+    const keys = Object.keys(scn.sensors);
+    const isNum = (k) => scn.sensors[k] && typeof scn.sensors[k] === 'object' && scn.sensors[k].type === 'number';
+    const si = { bool: keys.filter((k) => !isNum(k)), num: keys.filter(isNum) };
     const opts = [];
     si.bool.forEach((s) => opts.push({ v: 's:' + s, label: s, group: 'Sensors' }));
     si.num.forEach((s) => opts.push({ v: 'n:' + s, label: s + ' (number)', group: 'Numbers' }));
@@ -80,7 +82,16 @@
   function fmt(n) {
     return String(Math.round(n * 100) / 100);
   }
-  function formHtml(type, scn, pre, adding) {
+  const BLOCKS = new Set(['if', 'while', 'repeat', 'forever']);
+  function wrapHtml(type, opts) {
+    if (!opts || !opts.canWrap || !BLOCKS.has(type)) return '';
+    const what = type === 'if' ? 'in the “yes” side of the if' : type === 'forever' ? 'inside the loop (so they repeat forever)' : 'inside the loop';
+    return `<label class="sb-check sb-wrap"><input type="checkbox" data-f="wrap"${type === 'forever' ? ' checked' : ''}> Put the steps that come after this <b>${what}</b></label>`;
+  }
+  function formHtml(type, scn, pre, adding, opts) {
+    return formFields(type, scn, pre, adding) + (adding ? wrapHtml(type, opts) : '');
+  }
+  function formFields(type, scn, pre, adding) {
     pre = pre || {};
     switch (type) {
       case 'set': {
@@ -107,9 +118,9 @@
       case 'while':
         return condHtml(scn, pre.cond);
       case 'if':
-        return condHtml(scn, pre.cond) + (adding ? `<label class="sb-check"><input type="checkbox" data-f="else" checked> Add an <b>else</b> branch (what to do otherwise)</label>` : '');
+        return condHtml(scn, pre.cond) + (adding ? `<label class="sb-check"><input type="checkbox" data-f="else"> Add an <b>else</b> side too (what to do otherwise)</label>` : '');
       case 'forever':
-        return `<p class="sb-note">Everything inside this block repeats for ever. A <code>wait 1</code> step is added inside – change it to whatever you need.</p>`;
+        return `<p class="sb-note">Everything inside this block repeats for ever. Add steps inside it with the <b>+</b> buttons once it’s in the flowchart.</p>`;
       case 'assign': {
         const mode = pre.op === 'add' ? 'change' : 'set';
         return `<label class="sb-label">Variable name</label>
@@ -141,7 +152,7 @@
       const el = root.querySelector(`[data-f="${f}"]`);
       return el ? el.value.trim() : '';
     };
-    const body = adding ? ['    wait 1'] : [];
+    const body = [];
     switch (type) {
       case 'set': {
         const on = root.querySelector('.sb-state.on');
@@ -158,7 +169,7 @@
       case 'if': {
         const lines = [`if ${condText(root)}:`, ...body];
         const el = root.querySelector('[data-f="else"]');
-        if (adding && el && el.checked) lines.push('else:', '    wait 1');
+        if (adding && el && el.checked) lines.push('else:');
         return lines;
       }
       case 'forever':
@@ -205,5 +216,5 @@
     return `<div class="sb-grid">${TYPES.map((t) => `<button type="button" class="sb-type" data-type="${t.id}">${t.icon}<span><b>${t.name}</b><small>${t.desc}</small></span></button>`).join('')}</div>`;
   }
 
-  FL.stepBuilder = { TYPES, typeById, formHtml, buildLines, bind, paletteHtml, condFromStmt };
+  FL.stepBuilder = { TYPES, typeById, formHtml, buildLines, bind, paletteHtml, condFromStmt, BLOCKS };
 })();

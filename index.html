@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=13">
+  <link rel="stylesheet" href="css/styles.css?v=15">
 </head>
 <body>
 
@@ -45,6 +45,10 @@
             <button class="tab" data-view="flow" role="tab">🔀 Flowchart</button>
           </div>
           <div class="panel-actions">
+            <span class="undo-btns">
+              <button class="btn small ghost" id="btn-undo" title="Undo (Cmd/Ctrl+Z)" disabled>↶ Undo</button>
+              <button class="btn small ghost" id="btn-redo" title="Redo (Shift+Cmd/Ctrl+Z)" disabled>↷ Redo</button>
+            </span>
             <button class="btn small ghost" id="btn-reset-code" title="Go back to the starting program">↺ Start over</button>
             <button class="btn small ghost" id="btn-solution" title="See one possible answer">👀 Solution</button>
           </div>
@@ -121,25 +125,25 @@
     </div>
   </div>
 
-  <script src="js/language.js?v=13"></script>
-  <script src="js/editor.js?v=13"></script>
-  <script src="js/flowchart.js?v=13"></script>
-  <script src="js/stepbuilder.js?v=13"></script>
-  <script src="js/sim-kit.js?v=13"></script>
-  <script src="js/scenarios/zebra.js?v=13"></script>
-  <script src="js/scenarios/lighthouse.js?v=13"></script>
-  <script src="js/scenarios/carpark.js?v=13"></script>
-  <script src="js/scenarios/doors.js?v=13"></script>
-  <script src="js/scenarios/squishy.js?v=13"></script>
-  <script src="js/scenarios/bridge.js?v=13"></script>
-  <script src="js/scenarios/pelican.js?v=13"></script>
-  <script src="js/scenarios/levelcrossing.js?v=13"></script>
-  <script src="js/scenarios/canal.js?v=13"></script>
-  <script src="js/scenarios/firestation.js?v=13"></script>
-  <script src="js/scenarios/sixseven.js?v=13"></script>
-  <script src="js/scenarios/crossroads.js?v=13"></script>
-  <script src="js/scenarios/roundabout.js?v=13"></script>
-  <script src="js/scenarios/airport.js?v=13"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/language.js?v=15"></script>
+  <script src="js/editor.js?v=15"></script>
+  <script src="js/flowchart.js?v=15"></script>
+  <script src="js/stepbuilder.js?v=15"></script>
+  <script src="js/sim-kit.js?v=15"></script>
+  <script src="js/scenarios/zebra.js?v=15"></script>
+  <script src="js/scenarios/lighthouse.js?v=15"></script>
+  <script src="js/scenarios/carpark.js?v=15"></script>
+  <script src="js/scenarios/doors.js?v=15"></script>
+  <script src="js/scenarios/squishy.js?v=15"></script>
+  <script src="js/scenarios/bridge.js?v=15"></script>
+  <script src="js/scenarios/pelican.js?v=15"></script>
+  <script src="js/scenarios/levelcrossing.js?v=15"></script>
+  <script src="js/scenarios/canal.js?v=15"></script>
+  <script src="js/scenarios/firestation.js?v=15"></script>
+  <script src="js/scenarios/sixseven.js?v=15"></script>
+  <script src="js/scenarios/crossroads.js?v=15"></script>
+  <script src="js/scenarios/roundabout.js?v=15"></script>
+  <script src="js/scenarios/airport.js?v=15"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 </html>

@@ -66,6 +66,7 @@
     $('#ws-level').className = 'badge level-' + scn.difficulty.toLowerCase();
     editor.setVocab(scn);
     editor.setValue(store.get('logiclab.code.' + id) || scn.starter);
+    resetHistory();
     buildSnippets();
     buildReference();
     showScreen('workspace');
@@ -97,10 +98,69 @@
     }
   }
 
+  /* ---------- undo / redo ----------
+   * A list of earlier versions of the program. Typing is grouped into one step
+   * after a short pause; every flowchart change is its own step. */
+  const HIST = { undo: [], redo: [], last: null, timer: null };
+  function resetHistory() {
+    HIST.undo = [];
+    HIST.redo = [];
+    HIST.last = editor.getValue();
+    clearTimeout(HIST.timer);
+    updateUndoButtons();
+  }
+  function recordNow() {
+    clearTimeout(HIST.timer);
+    const v = editor.getValue();
+    if (HIST.last !== null && v !== HIST.last) {
+      HIST.undo.push(HIST.last);
+      if (HIST.undo.length > 200) HIST.undo.shift();
+      HIST.redo = [];
+    }
+    HIST.last = v;
+    updateUndoButtons();
+  }
+  const snapshotBefore = recordNow;
+  function restoreVersion(v) {
+    HIST.last = v;
+    editor.setValue(v);
+    if (S.scn) store.set('logiclab.code.' + S.scn.id, v);
+    clearTimeout(parseTimer);
+    closePop();
+    reparse();
+  }
+  function undo() {
+    if (S.running) return;
+    recordNow();
+    if (!HIST.undo.length) return;
+    HIST.redo.push(editor.getValue());
+    restoreVersion(HIST.undo.pop());
+    updateUndoButtons();
+  }
+  function redo() {
+    if (S.running) return;
+    recordNow();
+    if (!HIST.redo.length) return;
+    HIST.undo.push(editor.getValue());
+    restoreVersion(HIST.redo.pop());
+    updateUndoButtons();
+  }
+  function updateUndoButtons() {
+    const u = $('#btn-undo');
+    const r = $('#btn-redo');
+    if (!u || !editor) return;
+    const typingPending = HIST.last !== null && editor.getValue() !== HIST.last;
+    u.disabled = S.running || !(HIST.undo.length || typingPending);
+    r.disabled = S.running || !HIST.redo.length;
+  }
+
   /* ---------- parsing & messages ---------- */
   let parseTimer = null;
   function onCodeChange(code) {
     if (S.scn) store.set('logiclab.code.' + S.scn.id, code);
+    clearTimeout(HIST.timer);
+    HIST.timer = setTimeout(recordNow, 700);
+    updateUndoButtons();
     clearTimeout(parseTimer);
     parseTimer = setTimeout(reparse, 180);
   }
@@ -209,6 +269,7 @@
       return { index: n, indent: 0 };
     }
     if (ctx.kind === 'after') return { index: st.endLine, indent: st.indent };
+    if (ctx.kind === 'newelse') return { index: st.endLine, indent: st.indent, newElse: true };
     if (ctx.kind === 'inside') return { index: st.line, indent: st.body && st.body[0] ? st.body[0].indent : st.indent + 4 };
     return { index: st.elseLine, indent: st.elseBody && st.elseBody[0] ? st.elseBody[0].indent : st.indent + 4 };
   }
@@ -217,6 +278,7 @@
     if (ctx.kind === 'bottom') return 'at the end';
     if (ctx.kind === 'after') return `after line ${ctx.st.endLine}`;
     if (ctx.kind === 'inside') return `inside line ${ctx.st.line}`;
+    if (ctx.kind === 'newelse') return `in a new “else” for line ${ctx.st.line}`;
     return `in the “else” of line ${ctx.st.line}`;
   }
   function guardRunning() {
@@ -251,7 +313,7 @@
       if (o.st.type === 'assign' && o.st.op === 'sub') pre = { ...pre, op: 'add', exprText: '-' + o.st.exprText };
     }
     pop.innerHTML = `<div class="pop-title"><span class="sb-head">${T.icon}${adding ? 'New' : 'Edit'} ${esc(T.name.toLowerCase())} step${o.st ? ` · line ${o.st.line}` : ''}</span><button data-a="close" title="Close">×</button></div>
-      <form class="sb-form" id="sb-form" autocomplete="off">${SB().formHtml(o.type, S.scn, pre, adding)}</form>
+      <form class="sb-form" id="sb-form" autocomplete="off">${SB().formHtml(o.type, S.scn, pre, adding, { canWrap: adding && canWrap(o.ctx) })}</form>
       <div class="sb-preview-label">Code</div><pre class="sb-preview" id="sb-preview"></pre>
       <div class="pop-btns">
         <button class="btn small primary" data-a="commit">${adding ? '+ Add step' : 'Save'}</button>
@@ -263,7 +325,16 @@
              <button class="btn small ghost" data-a="text">Edit as text</button>`}
       </div>`;
     const form = $('#sb-form');
-    const refresh = () => ($('#sb-preview').textContent = SB().buildLines(o.type, form, adding).join('\n'));
+    const wrapping = () => {
+      const w = form.querySelector('[data-f="wrap"]');
+      return !!(w && w.checked);
+    };
+    const refresh = () => {
+      const lines = SB().buildLines(o.type, form, adding);
+      if (wrapping()) lines.splice(1, 0, '    # …the steps after this move in here');
+      else if (adding && SB().BLOCKS.has(o.type)) lines.splice(1, 0, '    # (empty – add steps inside later)');
+      $('#sb-preview').textContent = lines.join('\n');
+    };
     SB().bind(form, S.scn, refresh);
     refresh();
     placePop(anchorEl);
@@ -274,7 +345,7 @@
     }
     const commit = () => {
       const lines = SB().buildLines(o.type, form, adding);
-      if (adding) applyInsert(o.ctx, lines);
+      if (adding) applyInsert(o.ctx, lines, wrapping());
       else applyReplace(o.st, lines[0]);
     };
     form.onsubmit = (e) => {
@@ -351,13 +422,15 @@
 
   /* ---- applying changes to the code ---- */
   function commitLines(lines, focusLine) {
+    snapshotBefore();
     editor.setValue(lines.join('\n'));
     onCodeChange(editor.getValue());
+    recordNow();
     clearTimeout(parseTimer);
     reparse();
     closePop();
     if (!S.parsed.ok) {
-      flashMsg('That change made an error – check the message below, or switch to Code view to fix it.');
+      flashMsg('That change made an error – press ↶ Undo to go back, or switch to Code view to fix it.');
       return;
     }
     if (focusLine) {
@@ -368,10 +441,45 @@
       }
     }
   }
-  function applyInsert(ctx, newLines) {
+  const indentOf = (line) => line.replace(/\t/g, '    ').match(/^ */)[0].length;
+  /* Where the run of steps that follows `index` (at this indent) ends. */
+  function endOfRun(lines, index, indent) {
+    let i = index;
+    let end = index;
+    while (i < lines.length) {
+      const ln = lines[i];
+      const code = ln.replace(/#.*$/, '');
+      if (!code.trim()) {
+        i++;
+        continue;
+      }
+      const ind = indentOf(ln);
+      if (ind < indent) break;
+      if (ind === indent && /^\s*(else|otherwise)\b/i.test(code)) break;
+      i++;
+      end = i;
+    }
+    return end;
+  }
+  function canWrap(ctx) {
+    if (!ctx) return false;
+    const ip = insertionPoint(ctx);
+    if (ip.newElse) return false;
     const lines = editor.getValue().split('\n');
-    const { index, indent } = insertionPoint(ctx);
-    lines.splice(index, 0, ...newLines.map((l) => pad(indent) + l));
+    return endOfRun(lines, ip.index, ip.indent) > ip.index;
+  }
+  function applyInsert(ctx, newLines, wrap) {
+    const lines = editor.getValue().split('\n');
+    const { index, indent, newElse } = insertionPoint(ctx);
+    if (newElse) {
+      lines.splice(index, 0, pad(indent) + 'else:', ...newLines.map((l) => pad(indent + 4) + l));
+      commitLines(lines, index + 2);
+      return;
+    }
+    const end = wrap ? endOfRun(lines, index, indent) : index;
+    const moved = lines.slice(index, end).map((l) => (l.trim() ? '    ' + l : l));
+    const [head, ...tail] = newLines;
+    lines.splice(index, end - index, pad(indent) + head, ...moved, ...tail.map((l) => pad(indent) + l));
     commitLines(lines, index + 1);
   }
   function applyReplace(st, text) {
@@ -463,8 +571,10 @@
       if (a === 'close') closeModal();
       if (a === 'next-hint') showHint(true);
       if (a === 'use-solution') {
+        snapshotBefore();
         editor.setValue(S.scn.solution);
         onCodeChange(S.scn.solution);
+        recordNow();
         clearTimeout(parseTimer);
         reparse();
         closeModal();
@@ -732,6 +842,7 @@
   }
 
   function updateButtons() {
+    updateUndoButtons();
     const run = $('#btn-run');
     run.textContent = S.running && S.paused ? '▶ Resume' : S.running ? '▶ Running…' : '▶ Run';
     run.disabled = S.running && !S.paused;
@@ -754,8 +865,10 @@
       openModal(`<div class="modal-head"><h2>Start over?</h2></div><div class="modal-content"><p>This replaces your program with the starting program for this scenario.</p></div>
         <div class="modal-foot"><button class="btn" data-m="close">Cancel</button><button class="btn primary" id="confirm-reset">Start over</button></div>`);
       $('#confirm-reset').addEventListener('click', () => {
+        snapshotBefore();
         editor.setValue(S.scn.starter);
         onCodeChange(S.scn.starter);
+        recordNow();
         clearTimeout(parseTimer);
         reparse();
         closeModal();
@@ -764,7 +877,20 @@
     $('#modal').addEventListener('click', (e) => {
       if (e.target.id === 'modal') closeModal();
     });
+    $('#btn-undo').addEventListener('click', undo);
+    $('#btn-redo').addEventListener('click', redo);
     document.addEventListener('keydown', (e) => {
+      // Cmd/Ctrl+Z to undo, with Shift (or Ctrl+Y) to redo – except while typing in a box,
+      // where the box's own undo works
+      const k = (e.key || '').toLowerCase();
+      if ((e.metaKey || e.ctrlKey) && (k === 'z' || k === 'y') && S.scn && !$('#workspace').classList.contains('hidden')) {
+        const t = e.target;
+        if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT')) return;
+        e.preventDefault();
+        if (k === 'y' || e.shiftKey) redo();
+        else undo();
+        return;
+      }
       if (e.key === 'Escape') {
         closeModal();
         closePop();

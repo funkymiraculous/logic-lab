@@ -29,6 +29,17 @@
   }
   const EMPTY = { L: 0, R: 0, H: 0, exit: true, empty: true, draw() {} };
   /* "+" buttons on the arrows, for adding a step at that point */
+  /* A dashed slot shown where a block has no steps yet; clicking it adds one. */
+  function slot(ins, text) {
+    const w = text.length > 8 ? 120 : 76;
+    const h = 30;
+    return {
+      L: w / 2, R: w / 2, H: h, exit: true,
+      draw(cx, y, o) {
+        o.n.push(`<g class="fc-plus fc-slot" data-ins="${ins}" tabindex="0"><title>Add a step here</title><rect x="${f(cx - w / 2)}" y="${f(y)}" width="${w}" height="${h}" rx="8"/><text x="${f(cx)}" y="${f(y + h / 2)}">${text}</text></g>`);
+      },
+    };
+  }
   function plus(o, x, y, ins) {
     o.n.push(`<g class="fc-plus" data-ins="${ins}" tabindex="0"><title>Add a step here</title><circle cx="${f(x)}" cy="${f(y)}" r="8.5"/><path d="M${f(x - 4)} ${f(y)}h8M${f(x)} ${f(y - 4)}v8"/></g>`);
   }
@@ -82,6 +93,7 @@
     }
 
     function seq(stmts, firstIns) {
+      if (!stmts.length && firstIns) return slot(firstIns, '+ add a step');
       const items = [];
       let exit = true;
       for (const st of stmts) {
@@ -163,7 +175,7 @@
     function ifNode(s, sub) {
       const d = diamondShape(s, sub, s.condText + '?');
       const Y = seq(s.body, 'inside:' + s.id);
-      const N = s.elseBody ? seq(s.elseBody, 'else:' + s.id) : EMPTY;
+      const N = s.elseBody ? seq(s.elseBody, 'else:' + s.id) : slot('newelse:' + s.id, '+ else');
       const offY = Math.max(d.w / 2, Y.R + 28);
       const offN = Math.max(d.w / 2, N.L + 28);
       const bh = Math.max(Y.H, N.H);
@@ -274,7 +286,6 @@
     }
     if (B.exit) {
       path(o, [[0, y], [0, y + GAP]]);
-      if (B.empty) plus(o, 0, y + GAP / 2, 'top');
       y += GAP;
       pill(o, 0, y, 'End', 'end');
       y += PH;

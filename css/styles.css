@@ -321,3 +321,12 @@ code { font-family: var(--mono); font-size: .88em; background: var(--brand-soft)
 .sb-preview { margin: 4px 0 0; background: var(--code-bg); color: var(--code-ink); font: 13px/1.5 var(--mono); padding: 7px 10px; border-radius: 8px; white-space: pre-wrap; }
 .pop input[type=checkbox] { width: auto; padding: 0; margin: 0; flex-shrink: 0; accent-color: var(--brand); }
 .sb-check span, .sb-check b { white-space: normal; }
+
+/* empty-block slots */
+.fc-slot { opacity: .8; }
+.fc-slot rect { fill: #fff; stroke: var(--brand); stroke-width: 1.8; stroke-dasharray: 5 4; }
+.fc-slot text { font: 800 12px var(--font); fill: var(--brand); dominant-baseline: central; text-anchor: middle; pointer-events: none; }
+.fc-slot:hover rect { fill: var(--brand-soft); }
+.fc-svg:hover .fc-slot, .fc-slot { opacity: .9; }
+.flow-canvas.running .fc-slot { display: inline; pointer-events: none; opacity: .5; }
+.undo-btns { display: inline-flex; gap: 2px; }

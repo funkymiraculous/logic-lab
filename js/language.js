@@ -296,7 +296,7 @@
 
   function parse(src, scn) {
     const vocab = buildVocab(scn);
-    const P = { scn, vocab, used: [], assigned: new Set() };
+    const P = { scn, vocab, used: [], assigned: new Set(), empty: [] };
     const lines = src.replace(/\r/g, '').split('\n');
     const toks = [];
     lines.forEach((rawLine, i) => {
@@ -317,7 +317,9 @@
     function bodyFor(t, indent, what) {
       const n = toks[pos];
       if (!n || n.indent <= indent) {
-        throw new LangError(`The steps that belong inside "${what}" must be indented underneath it (press Tab at the start of the line).`, t.line);
+        // an empty block is allowed – it just doesn't do anything yet
+        P.empty.push({ line: t.line, message: `"${what}" on line ${t.line} has no steps inside it yet. Indent the steps that belong inside it (press Tab), or add some in the flowchart.` });
+        return [];
       }
       return block(n.indent);
     }
@@ -371,7 +373,7 @@
       }
     }
 
-    const warnings = [];
+    const warnings = P.empty.slice();
     (function findUnreachable(seq) {
       let dead = false;
       for (const st of seq) {
