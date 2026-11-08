@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logic Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=6">
+</head>
+<body>
+
+  <!-- ============ HOME ============ -->
+  <div id="home" class="screen">
+    <header class="home-hero">
+      <div class="logo"><span class="logo-mark">⚙︎</span> Logic Lab</div>
+      <h1>Learn to code by controlling the real world</h1>
+      <p>Pick a scenario, write a program (or read it as a flowchart), then press <b>Run</b> to watch what happens. Get the logic wrong… and things crash!</p>
+    </header>
+    <section id="scenario-cards"></section>
+    <footer class="home-foot">Your programs are saved automatically in this browser.</footer>
+  </div>
+
+  <!-- ============ WORKSPACE ============ -->
+  <div id="workspace" class="screen hidden">
+    <header class="ws-header">
+      <button class="btn ghost" id="btn-back">← Scenarios</button>
+      <div class="ws-title">
+        <h1 id="ws-title"></h1>
+        <span class="badge" id="ws-level"></span>
+      </div>
+      <div class="ws-actions">
+        <button class="btn ghost" id="btn-hint">💡 Hint</button>
+        <button class="btn ghost" id="btn-mission">📋 Mission</button>
+      </div>
+    </header>
+
+    <main class="split" id="split">
+      <!-- Programming panel -->
+      <section class="panel prog-panel" id="prog-panel">
+        <div class="panel-head">
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-view="code" role="tab">⌨️ Code</button>
+            <button class="tab" data-view="flow" role="tab">🔀 Flowchart</button>
+          </div>
+          <div class="panel-actions">
+            <button class="btn small ghost" id="btn-reset-code" title="Go back to the starting program">↺ Start over</button>
+            <button class="btn small ghost" id="btn-solution" title="See one possible answer">👀 Solution</button>
+          </div>
+        </div>
+
+        <div class="view code-view" id="code-view">
+          <div class="snippets" id="snippets"></div>
+          <div id="editor"></div>
+        </div>
+
+        <div class="view flow-view hidden" id="flow-view">
+          <div class="flow-toolbar">
+            <span class="flow-hint">Click a step to edit it · click <b>+</b> on an arrow to add a step</span>
+            <div class="zoom">
+              <button class="btn small ghost" data-zoom="-1" title="Zoom out">−</button>
+              <button class="btn small ghost" data-zoom="0" title="Fit">Fit</button>
+              <button class="btn small ghost" data-zoom="1" title="Zoom in">+</button>
+            </div>
+          </div>
+          <div class="flow-scroll" id="flow-scroll"><div class="flow-canvas" id="flow-canvas"></div></div>
+          <div class="flow-stale hidden" id="flow-stale">⚠️ Fix the error in your code to update the flowchart</div>
+          <div class="pop hidden" id="pop"></div>
+        </div>
+
+        <div class="msg-bar" id="msg-bar"></div>
+
+        <details class="reference" id="reference">
+          <summary>📖 Command reference</summary>
+          <div id="ref-body"></div>
+        </details>
+      </section>
+
+      <div class="divider" id="divider" title="Drag to resize"></div>
+
+      <!-- Simulation panel -->
+      <section class="panel sim-panel">
+        <div class="panel-head sim-controls">
+          <button class="btn primary" id="btn-run">▶ Run</button>
+          <button class="btn" id="btn-pause" disabled>⏸ Pause</button>
+          <button class="btn" id="btn-stop" disabled>■ Stop</button>
+          <div class="speed" id="speed">
+            <span>Speed</span>
+            <button data-speed="0.5">½×</button>
+            <button data-speed="1" class="active">1×</button>
+            <button data-speed="2">2×</button>
+            <button data-speed="4">4×</button>
+          </div>
+          <div class="clock"><span id="sim-clock">0.0 s</span><div class="clock-bar"><div id="clock-fill"></div></div></div>
+        </div>
+        <div class="sim-stage" id="sim-stage">
+          <canvas id="sim-canvas"></canvas>
+          <div class="stage-hint" id="stage-hint">Press <b>▶ Run</b> to start the simulation</div>
+          <div class="sim-overlay hidden" id="sim-overlay"></div>
+        </div>
+        <div class="prog-status" id="prog-status">Program not running</div>
+        <div class="sim-info">
+          <div class="info-card">
+            <h3>Goals</h3>
+            <ul class="goals" id="goal-list"></ul>
+          </div>
+          <div class="info-card">
+            <h3>Live status</h3>
+            <div class="status-grid" id="live-status"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ MODAL ============ -->
+  <div class="modal-back hidden" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="js/language.js?v=6"></script>
+  <script src="js/editor.js?v=6"></script>
+  <script src="js/flowchart.js?v=6"></script>
+  <script src="js/stepbuilder.js?v=6"></script>
+  <script src="js/sim-kit.js?v=6"></script>
+  <script src="js/scenarios/zebra.js?v=6"></script>
+  <script src="js/scenarios/lighthouse.js?v=6"></script>
+  <script src="js/scenarios/carpark.js?v=6"></script>
+  <script src="js/scenarios/doors.js?v=6"></script>
+  <script src="js/scenarios/bridge.js?v=6"></script>
+  <script src="js/scenarios/pelican.js?v=6"></script>
+  <script src="js/scenarios/levelcrossing.js?v=6"></script>
+  <script src="js/scenarios/canal.js?v=6"></script>
+  <script src="js/scenarios/firestation.js?v=6"></script>
+  <script src="js/scenarios/crossroads.js?v=6"></script>
+  <script src="js/scenarios/roundabout.js?v=6"></script>
+  <script src="js/scenarios/airport.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
+</body>
+</html>
