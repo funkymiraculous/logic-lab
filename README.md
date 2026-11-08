@@ -37,7 +37,7 @@ Number sensors (like `queue south`) can be compared too.
 
 ## Scenarios
 
-Beginner: Zebra Crossing, Lighthouse, Car Park Barrier, Shop Doors.
+Beginner: Zebra Crossing, Lighthouse, Car Park Barrier, Shop Doors, Squish Tester.
 Intermediate: Single-Lane Bridge, Pelican Crossing, Level Crossing, Canal Lock, Fire Station.
 Advanced: Crossroads, Smart Roundabout (variables), Airport Runway.
 
