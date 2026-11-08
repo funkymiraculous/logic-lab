@@ -4,6 +4,8 @@ Learn programming, flowcharts and logic by controlling real-world scenarios.
 
 ## Running it
 
+**Play online:** https://funkymiraculous.github.io/logic-lab/ (works on laptops and iPads – on an iPad, tap Share → Add to Home Screen).
+
 Double-click `index.html` to open it in your browser — no install needed.
 (Or serve the folder, e.g. `python3 -m http.server 8765`, and visit http://localhost:8765.)
 
